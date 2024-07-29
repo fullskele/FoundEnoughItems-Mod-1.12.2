@@ -1,0 +1,7 @@
+#Tooltips
+tooltip.foundenoughitems.name=§k????????????
+tooltip.foundenoughitems.separator=
+tooltip.foundenoughitems.description=This remains a mystery to you.
+#Message
+message.foundenoughitems.pre=You discovered
+message.foundenoughitems.post=!
