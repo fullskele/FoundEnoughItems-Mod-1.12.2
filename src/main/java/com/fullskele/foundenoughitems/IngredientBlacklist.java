@@ -7,7 +7,6 @@ import mezz.jei.api.ingredients.VanillaTypes;
 import mezz.jei.api.recipe.IRecipeWrapper;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
@@ -20,7 +19,6 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 
-import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -39,11 +37,11 @@ public class IngredientBlacklist implements IModPlugin {
 
     private static IIngredientRegistry ingredientRegistry;
     private static IIngredientHelper<ItemStack> ingredientHelper;
-
     private static IRecipeRegistry recipeRegistry;
 
+    private static BlacklistManager blacklistManager = null;
     private static final Set<ItemStack> unlockedItems = new HashSet<>();
-    private static final Set<Item> blockedItems = new HashSet<>();
+
     private static boolean shouldSave = false;
 
     public void register(IModRegistry registry) {
@@ -54,46 +52,51 @@ public class IngredientBlacklist implements IModPlugin {
 
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
         recipeRegistry = jeiRuntime.getRecipeRegistry();
+        blacklistManager = new BlacklistManager();
         parseConfigForItems();
     }
 
-    //TODO: CraftTweaker support to add categories and specific recipes that didn't get caught
-    //TODO: Additional blacklist categories with individual parameters, need to make a datatype that encapsulates + handles them all for checks
+    //TODO: Support to add categories and specific recipes that didn't get caught
     private static void parseConfigForItems() {
         List<ItemStack> validItemStacks = new ArrayList<>();
 
-        for (String itemString : ConfigHandler.JEI_BLACKLIST) {
-            //Convert the string to ResourceLocation
-            ResourceLocation itemResourceLocation = new ResourceLocation(itemString);
-
-            //Get item from Forge registry
-            Item item = ForgeRegistries.ITEMS.getValue(itemResourceLocation);
-            IRecipe recipe = (ForgeRegistries.RECIPES.getValue(itemResourceLocation));
-            if (recipe != null) {
-                try {
-                    IRecipeWrapper recipeWrapper = recipeRegistry.getRecipeWrapper(recipe, "minecraft.crafting");
-                    if (recipeWrapper != null) {
-                        recipeRegistry.hideRecipe(recipeWrapper);
+        for (int i = 0; i <= ConfigHandler.JEI_BLACKLIST.length - 1; i++) {
+            String[] stringArray = ConfigHandler.JEI_BLACKLIST[i];
+            for (String itemString : stringArray) {
+                //Convert the string to ResourceLocation
+                ResourceLocation itemResourceLocation = new ResourceLocation(itemString);
+                //Get item from Forge registry
+                Item item = ForgeRegistries.ITEMS.getValue(itemResourceLocation);
+                if (ConfigHandler.DOES_HIDE_RECIPES[i]) {
+                    IRecipe recipe = (ForgeRegistries.RECIPES.getValue(itemResourceLocation));
+                    if (recipe != null) {
+                        try {
+                            IRecipeWrapper recipeWrapper = recipeRegistry.getRecipeWrapper(recipe, "minecraft.crafting");
+                            if (recipeWrapper != null) {
+                                recipeRegistry.hideRecipe(recipeWrapper);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error processing item: " + itemString);
+                            e.printStackTrace();
+                        }
                     }
-                } catch (Exception e) {
-                    System.err.println("Error processing item: " + itemString);
-                    e.printStackTrace();
+                }
+
+                // Check if item from config list is valid
+                if (item != null) {
+                    if (ConfigHandler.DOES_HIDE_IN_JEI[i]) {
+                        System.err.println("OOGA!!!");
+                        validItemStacks.add(item.getDefaultInstance());
+                    }
+                    blacklistManager.addItemToBlacklist(i, item);
+
+                } else {
+                    System.err.println("Invalid item: " + itemString);
                 }
             }
-
-            // Check if item from config list is valid
-            if (item != null) {
-                validItemStacks.add(item.getDefaultInstance());
-                blockedItems.add(item);
-            } else {
-                System.err.println("Invalid item: " + itemString);
-            }
         }
-
         ingredientRegistry.removeIngredientsAtRuntime(VanillaTypes.ITEM, validItemStacks);
     }
-
-
 
 
     //Override tooltip if the item is hidden
@@ -105,11 +108,12 @@ public class IngredientBlacklist implements IModPlugin {
 
         if (player != null && !itemStack.isEmpty()) {
             Item item = itemStack.getItem();
-            if (blockedItems.contains(item) && unlockedItems.stream().noneMatch(stack -> stack.getItem().equals(itemStack.getItem()))) {
+            int listNum = blacklistManager.getListNum(item);
+            if (listNum != -1 && unlockedItems.stream().noneMatch(stack -> stack.getItem().equals(itemStack.getItem()))) {
                 event.getToolTip().clear();
-                event.getToolTip().add(TextFormatting.WHITE + I18n.format("tooltip.foundenoughitems.name"));
-                event.getToolTip().add(TextFormatting.WHITE + I18n.format("tooltip.foundenoughitems.separator"));
-                event.getToolTip().add(TextFormatting.WHITE + I18n.format("tooltip.foundenoughitems.description"));
+                event.getToolTip().add(blacklistManager.getNameLang(listNum));
+                event.getToolTip().add(blacklistManager.getSeparatorLang(listNum));
+                event.getToolTip().add(blacklistManager.getTooltipLang(listNum));
             }
         }
     }
@@ -206,21 +210,20 @@ public class IngredientBlacklist implements IModPlugin {
     }
 
 
-
-
     //Can add mod compat as long as an event/action has a related ItemStack and EntityPlayer
     public static void revealItem(ItemStack itemStack, EntityPlayer player) {
         Item item = itemStack.getItem();
 
-        if (blockedItems.contains(item) && unlockedItems.stream().noneMatch(stack -> stack.getItem().equals(itemStack.getItem()))) {
+        int listNum = blacklistManager.getListNum(item);
+        if (listNum != -1 && unlockedItems.stream().noneMatch(stack -> stack.getItem().equals(itemStack.getItem()))) {
 
             // Send the player an unlock message
-            if (ConfigHandler.DOES_DISCOVER_MESSAGE)
-                player.sendMessage(new TextComponentString(I18n.format("message.foundenoughitems.pre") + " " + itemStack.getDisplayName() + I18n.format("message.foundenoughitems.post")));
+            if (ConfigHandler.DOES_DISCOVER_MESSAGE[listNum])
+                player.sendMessage(new TextComponentString(blacklistManager.getRevealMessage(listNum, itemStack)));
 
-            if (ConfigHandler.DOES_DISCOVER_SOUND) {
-                ResourceLocation soundResourceLocation = new ResourceLocation(ConfigHandler.DISCOVER_SOUND);
-                player.world.playSound(null, player.getPosition(), SoundEvent.REGISTRY.getObject(soundResourceLocation), SoundCategory.PLAYERS, ConfigHandler.DISCOVER_VOLUME, ConfigHandler.DISCOVER_PITCH);
+            if (ConfigHandler.DOES_DISCOVER_SOUND[listNum]) {
+                ResourceLocation soundResourceLocation = new ResourceLocation(ConfigHandler.DISCOVER_SOUND[listNum]);
+                player.world.playSound(null, player.getPosition(), SoundEvent.REGISTRY.getObject(soundResourceLocation), SoundCategory.PLAYERS, ConfigHandler.DISCOVER_VOLUME[0], ConfigHandler.DISCOVER_PITCH[0]);
             }
             // Add during runtime (real time)
             ingredientRegistry.addIngredientsAtRuntime(VanillaTypes.ITEM, Collections.singleton(itemStack));
@@ -244,21 +247,32 @@ public class IngredientBlacklist implements IModPlugin {
 
     private static void removeCollectedItems() {
         if (!unlockedItems.isEmpty()) {
-            ingredientRegistry.removeIngredientsAtRuntime(VanillaTypes.ITEM, unlockedItems);
-
+            Set<ItemStack> removeItems = new HashSet<>(Collections.emptySet());
             for (ItemStack i : unlockedItems) {
-                ResourceLocation itemResourceLocation = new ResourceLocation(ingredientHelper.getResourceId(i));
-                IRecipe recipe = (ForgeRegistries.RECIPES.getValue(itemResourceLocation));
-                if (recipe != null) {
-                    try {
-                        IRecipeWrapper recipeWrapper = recipeRegistry.getRecipeWrapper(recipe, "minecraft.crafting");
-                        if (recipeWrapper != null) {
-                            recipeRegistry.hideRecipe(recipeWrapper);
+                Item item = i.getItem();
+                int listNum = blacklistManager.getListNum(item);
+                if (ConfigHandler.DOES_HIDE_IN_JEI[listNum]) {
+                    removeItems.add(i);
+                }
+                if (ConfigHandler.DOES_HIDE_RECIPES[listNum]) {
+                    ResourceLocation itemResourceLocation = new ResourceLocation(ingredientHelper.getResourceId(i));
+                    IRecipe recipe = (ForgeRegistries.RECIPES.getValue(itemResourceLocation));
+                    if (recipe != null) {
+                        try {
+                            IRecipeWrapper recipeWrapper = recipeRegistry.getRecipeWrapper(recipe, "minecraft.crafting");
+                            if (recipeWrapper != null) {
+                                recipeRegistry.hideRecipe(recipeWrapper);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error processing item: " + i);
+                            e.printStackTrace();
                         }
-                    } catch (Exception e) {
-                        System.err.println("Error processing item: " + i);
-                        e.printStackTrace();
                     }
+                    if (!removeItems.isEmpty()) {
+                        ingredientRegistry.removeIngredientsAtRuntime(VanillaTypes.ITEM, removeItems);
+                    }
+
+                    //ingredientRegistry.removeIngredientsAtRuntime(VanillaTypes.ITEM, unlockedItems);
                 }
             }
             unlockedItems.clear();

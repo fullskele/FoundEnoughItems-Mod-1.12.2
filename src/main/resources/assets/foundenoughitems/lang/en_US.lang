@@ -1,7 +1,53 @@
+#Per-list localization
 #Tooltips
-tooltip.foundenoughitems.name=§k????????????
-tooltip.foundenoughitems.separator=
-tooltip.foundenoughitems.description=This remains a mystery to you.
+tooltip.foundenoughitems.name0=§k????????????
+tooltip.foundenoughitems.separator0=
+tooltip.foundenoughitems.tooltip0=This remains a mystery to you.
+
+tooltip.foundenoughitems.name1=§k????????????
+tooltip.foundenoughitems.separator1=
+tooltip.foundenoughitems.tooltip1=This remains a mystery to you.
+
+tooltip.foundenoughitems.name2=§k????????????
+tooltip.foundenoughitems.separator2=
+tooltip.foundenoughitems.tooltip2=This remains a mystery to you.
+
+tooltip.foundenoughitems.name3=§k????????????
+tooltip.foundenoughitems.separator3=
+tooltip.foundenoughitems.tooltip3=This remains a mystery to you.
+
+tooltip.foundenoughitems.name4=§k????????????
+tooltip.foundenoughitems.separator4=
+tooltip.foundenoughitems.tooltip4=This remains a mystery to you.
+
+tooltip.foundenoughitems.name5=§k????????????
+tooltip.foundenoughitems.separator5=
+tooltip.foundenoughitems.tooltip5=This remains a mystery to you.
+
+tooltip.foundenoughitems.name6=§k????????????
+tooltip.foundenoughitems.separator6=
+tooltip.foundenoughitems.tooltip6=This remains a mystery to you.
+
+tooltip.foundenoughitems.name7=§k????????????
+tooltip.foundenoughitems.separator7=
+tooltip.foundenoughitems.tooltip7=This remains a mystery to you.
+
+tooltip.foundenoughitems.name8=§k????????????
+tooltip.foundenoughitems.separator8=
+tooltip.foundenoughitems.tooltip8=This remains a mystery to you.
+
+tooltip.foundenoughitems.name9=§k????????????
+tooltip.foundenoughitems.separator9=
+tooltip.foundenoughitems.tooltip9=This remains a mystery to you.
+
 #Message
-message.foundenoughitems.pre=You discovered
-message.foundenoughitems.post=!
+message.foundenoughitems.found0=You discovered %s!
+message.foundenoughitems.found1=You discovered %s!
+message.foundenoughitems.found2=You discovered %s!
+message.foundenoughitems.found3=You discovered %s!
+message.foundenoughitems.found4=You discovered %s!
+message.foundenoughitems.found5=You discovered %s!
+message.foundenoughitems.found6=You discovered %s!
+message.foundenoughitems.found7=You discovered %s!
+message.foundenoughitems.found8=You discovered %s!
+message.foundenoughitems.found9=You discovered %s!
