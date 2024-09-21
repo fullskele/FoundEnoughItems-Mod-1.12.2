@@ -40,7 +40,7 @@ public class IngredientBlacklist implements IModPlugin {
     private static IRecipeRegistry recipeRegistry;
 
     private static BlacklistManager blacklistManager = null;
-    private static final Set<ItemStack> unlockedItems = new HashSet<>();
+    private static final Map<Item, ItemStack> unlockedItems = new HashMap<>();
 
     private static boolean shouldSave = false;
 
@@ -108,7 +108,7 @@ public class IngredientBlacklist implements IModPlugin {
         if (player != null && !itemStack.isEmpty()) {
             Item item = itemStack.getItem();
             int listNum = blacklistManager.getListNum(item);
-            if (listNum != -1 && unlockedItems.stream().noneMatch(stack -> stack.getItem().equals(itemStack.getItem()))) {
+            if (listNum != -1 && !unlockedItems.containsKey(itemStack.getItem())) {
                 event.getToolTip().clear();
                 event.getToolTip().add(blacklistManager.getNameLang(listNum));
                 event.getToolTip().add(blacklistManager.getSeparatorLang(listNum));
@@ -167,7 +167,7 @@ public class IngredientBlacklist implements IModPlugin {
                     for (int i = 0; i < itemList.tagCount(); i++) {
                         NBTTagCompound itemTag = itemList.getCompoundTagAt(i);
                         ItemStack itemStack = new ItemStack(itemTag);
-                        unlockedItems.add(itemStack);
+                        unlockedItems.put(itemStack.getItem(), itemStack);
                     }
 
                     restoreCollectedItems();
@@ -190,7 +190,7 @@ public class IngredientBlacklist implements IModPlugin {
 
                 NBTTagCompound compound = new NBTTagCompound();
                 NBTTagList itemList = new NBTTagList();
-                for (ItemStack itemStack : unlockedItems) {
+                for (ItemStack itemStack : unlockedItems.values()) {
                     NBTTagCompound itemTag = new NBTTagCompound();
                     itemStack.writeToNBT(itemTag);
                     itemList.appendTag(itemTag);
@@ -214,7 +214,7 @@ public class IngredientBlacklist implements IModPlugin {
         Item item = itemStack.getItem();
 
         int listNum = blacklistManager.getListNum(item);
-        if (listNum != -1 && unlockedItems.stream().noneMatch(stack -> stack.getItem().equals(itemStack.getItem()))) {
+        if (listNum != -1 && !unlockedItems.containsKey(itemStack.getItem())) {
 
             // Send the player an unlock message
             if (ConfigHandler.DOES_DISCOVER_MESSAGE[listNum])
@@ -226,7 +226,7 @@ public class IngredientBlacklist implements IModPlugin {
             }
             // Add during runtime (real time)
             ingredientRegistry.addIngredientsAtRuntime(VanillaTypes.ITEM, Collections.singleton(itemStack));
-            unlockedItems.add(itemStack);
+            unlockedItems.put(itemStack.getItem(), itemStack);
             shouldSave = true;
 
             IRecipe recipe = (ForgeRegistries.RECIPES.getValue(itemStack.getItem().getRegistryName()));
@@ -246,7 +246,7 @@ public class IngredientBlacklist implements IModPlugin {
     private static void removeCollectedItems() {
         if (!unlockedItems.isEmpty()) {
             Set<ItemStack> removeItems = new HashSet<>(Collections.emptySet());
-            for (ItemStack i : unlockedItems) {
+            for (ItemStack i : unlockedItems.values()) {
                 Item item = i.getItem();
                 int listNum = blacklistManager.getListNum(item);
                 if (ConfigHandler.DOES_HIDE_IN_JEI[listNum]) {
@@ -278,9 +278,9 @@ public class IngredientBlacklist implements IModPlugin {
 
     private static void restoreCollectedItems() {
         if (!unlockedItems.isEmpty()) {
-            ingredientRegistry.addIngredientsAtRuntime(VanillaTypes.ITEM, unlockedItems);
+            ingredientRegistry.addIngredientsAtRuntime(VanillaTypes.ITEM, unlockedItems.values());
 
-            for (ItemStack i : unlockedItems) {
+            for (ItemStack i : unlockedItems.values()) {
                 ResourceLocation itemResourceLocation = new ResourceLocation(ingredientHelper.getResourceId(i));
                 IRecipe recipe = (ForgeRegistries.RECIPES.getValue(itemResourceLocation));
                 if (recipe != null) {
