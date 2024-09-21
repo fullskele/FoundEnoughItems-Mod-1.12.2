@@ -63,6 +63,7 @@ public class IngredientBlacklist implements IModPlugin {
         for (int i = 0; i <= ConfigHandler.JEI_BLACKLIST.length - 1; i++) {
             String[] stringArray = ConfigHandler.JEI_BLACKLIST[i];
             for (String itemString : stringArray) {
+                if (itemString.isEmpty()) continue;
                 //Convert the string to ResourceLocation
                 ResourceLocation itemResourceLocation = new ResourceLocation(itemString);
                 //Get item from Forge registry
@@ -77,7 +78,6 @@ public class IngredientBlacklist implements IModPlugin {
                             }
                         } catch (Exception e) {
                             System.err.println("Error processing item: " + itemString);
-                            e.printStackTrace();
                         }
                     }
                 }
@@ -85,7 +85,6 @@ public class IngredientBlacklist implements IModPlugin {
                 // Check if item from config list is valid
                 if (item != null) {
                     if (ConfigHandler.DOES_HIDE_IN_JEI[i]) {
-                        System.err.println("OOGA!!!");
                         validItemStacks.add(item.getDefaultInstance());
                     }
                     blacklistManager.addItemToBlacklist(i, item);
@@ -239,7 +238,6 @@ public class IngredientBlacklist implements IModPlugin {
                     }
                 } catch (Exception e) {
                     System.err.println("Error processing stack: " + itemStack);
-                    e.printStackTrace();
                 }
             }
         }
@@ -265,7 +263,6 @@ public class IngredientBlacklist implements IModPlugin {
                             }
                         } catch (Exception e) {
                             System.err.println("Error processing item: " + i);
-                            e.printStackTrace();
                         }
                     }
                     if (!removeItems.isEmpty()) {
@@ -295,7 +292,6 @@ public class IngredientBlacklist implements IModPlugin {
                         }
                     } catch (Exception e) {
                         System.err.println("Error processing item: " + i);
-                        e.printStackTrace();
                     }
                 }
             }

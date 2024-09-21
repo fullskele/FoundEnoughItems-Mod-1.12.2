@@ -16,7 +16,7 @@ public class ConfigHandler {
     public static boolean[] DOES_DISCOVER_MESSAGE = new boolean[NUM_LISTS];
     public static boolean[] DOES_DISCOVER_SOUND = new boolean[NUM_LISTS];
     public static boolean[] DOES_HIDE_RECIPES = new boolean[NUM_LISTS];
-    public static final boolean[] DOES_HIDE_IN_JEI = new boolean[NUM_LISTS];
+    public static boolean[] DOES_HIDE_IN_JEI = new boolean[NUM_LISTS];
 
     public static String[] DISCOVER_SOUND = new String[NUM_LISTS];
     public static float[] DISCOVER_PITCH = new float[NUM_LISTS];
